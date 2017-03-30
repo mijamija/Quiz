@@ -11,12 +11,15 @@ public class Quizie {
     private String answerTwo;
     private String answerThree;
     private String answerFour;
+    private String hint;
     private int correctAnswer;
 
     public void setCorrectAnswer(int n)
     {
         correctAnswer = n;
     }
+
+    public String getHint() { return hint; }
 
     public String getQuestion() {
         return question;
@@ -37,6 +40,10 @@ public class Quizie {
     public String getAnswerFour() {
         return answerFour;
     }
+
+    public int getCorrectAnswer() { return correctAnswer; }
+
+    public void setHint(String hint) { this.hint = hint; }
 
     public void setQuestion(String question) {
         this.question = question;
