@@ -1,5 +1,6 @@
 package com.example.interns.quiz;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
@@ -12,8 +13,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+
+import cz.msebera.android.httpclient.Header;
+
+import static android.R.id.list;
 
 public class QuestionsActivity extends AppCompatActivity {
 
@@ -21,10 +35,10 @@ public class QuestionsActivity extends AppCompatActivity {
     RadioButton answer1, answer2, answer3, answer4;
     RadioGroup radioGroup;
     Button next, hint;
-    ArrayList<Quizie> list;
     int questionNum, score;
     Score playersScore;
     Intent i;
+    ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +61,7 @@ public class QuestionsActivity extends AppCompatActivity {
         playersScore = new Score();
         playersScore.setPlayer(i.getStringExtra("name"));
 
-        list = new ArrayList<>();
-        makeList(list);
-
         update();
-        if(checkCorrectAnswer())
-            score++;
         questionNum++;
         radioGroup.clearCheck();
 
@@ -63,8 +72,6 @@ public class QuestionsActivity extends AppCompatActivity {
                 if (atLeastOneChecked()) {
                     if (questionNum < 5) {
                         update();
-                        if (checkCorrectAnswer())
-                            score++;
                         questionNum++;
                         radioGroup.clearCheck();
                     }
@@ -85,13 +92,13 @@ public class QuestionsActivity extends AppCompatActivity {
             }
         });
 
-        hint = (Button) findViewById(R.id.hint);
-        hint.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(QuestionsActivity.this, list.get(questionNum - 1).getHint(), Toast.LENGTH_SHORT).show();
-            }
-        });
+//        hint = (Button) findViewById(R.id.hint);
+//        hint.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Toast.makeText(QuestionsActivity.this, list.get(questionNum - 1).getHint(), Toast.LENGTH_SHORT).show();
+//            }
+//        });
 
     }
 
@@ -108,78 +115,45 @@ public class QuestionsActivity extends AppCompatActivity {
 
     public void update()
     {
-        String startQuestion = "Question number ";
+        AsyncHttpClient client = new AsyncHttpClient();
 
-        question.setText(startQuestion + (questionNum + 1) + ":\n" + list.get(questionNum).getQuestion());
+        client.get("http://zoran.ogosense.net/api/get-questions", new JsonHttpResponseHandler()
+        {
+            @Override
+            public void onStart() {
+                progressDialog= new ProgressDialog(QuestionsActivity.this);
+                progressDialog.setMessage("Loading...");
+                progressDialog.show();
+            }
 
-        answer1.setText(list.get(questionNum).getAnswerOne());
-        answer2.setText(list.get(questionNum).getAnswerTwo());
-        answer3.setText(list.get(questionNum).getAnswerThree());
-        answer4.setText(list.get(questionNum).getAnswerFour());
-    }
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
 
-    public boolean checkCorrectAnswer()
-    {
-        int index = radioGroup.indexOfChild(findViewById(radioGroup.getCheckedRadioButtonId()));
+                try{
+                    JSONArray list = response.getJSONArray("data");
 
-        if((index + 1) == list.get(questionNum).getCorrectAnswer())
-            return true;
-        else
-            return false;
-    }
+                    question.setText("Question number " + (questionNum + 1) + ":\n" + list.getJSONObject(questionNum).getString("question"));
 
-    public void makeList(ArrayList<Quizie> list)
-    {
+                    answer1.setText(list.getJSONObject(questionNum).getString("answer1"));
+                    answer2.setText(list.getJSONObject(questionNum).getString("answer2"));
+                    answer3.setText(list.getJSONObject(questionNum).getString("answer3"));
+                    answer4.setText(list.getJSONObject(questionNum).getString("answer4"));
 
-        Quizie item1 = new Quizie();
-        Quizie item2 = new Quizie();
-        Quizie item3 = new Quizie();
-        Quizie item4 = new Quizie();
-        Quizie item5 = new Quizie();
+                    int index = radioGroup.indexOfChild(findViewById(radioGroup.getCheckedRadioButtonId()));
 
-        item1.setQuestion("Where would you find the Sea of tranquility?");
-        item1.setAnswerOne("In Australia");
-        item1.setAnswerTwo("In Alaska");
-        item1.setAnswerThree("On the Moon");
-        item1.setAnswerFour("In India");
-        item1.setCorrectAnswer(3);
-        item1.setHint("It's a planet");
-        list.add(item1);
+                    if((index + 1) == list.getJSONObject(questionNum).getInt("correct_answer"))
+                        score++;
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
 
-        item2.setQuestion("In which film did Humphrey Bogart say, \"We'll always have Paris?\" ");
-        item2.setAnswerOne("Holiday in Rome");
-        item2.setAnswerTwo("Casablanca");
-        item2.setAnswerThree("Breakfast at Tiffanys");
-        item2.setAnswerFour("Always");
-        item2.setCorrectAnswer(2);
-        item2.setHint("Movie is in black and white");
-        list.add(item2);
-
-        item3.setQuestion("How many colors are there in the rainbow?");
-        item3.setAnswerOne("7");
-        item3.setAnswerTwo("12");
-        item3.setAnswerThree("8");
-        item3.setAnswerFour("5");
-        item3.setCorrectAnswer(1);
-        item3.setHint("Less than 8, but more than 6");
-        list.add(item3);
-
-        item4.setQuestion("What is rum made from?");
-        item4.setAnswerOne("Corn");
-        item4.setAnswerTwo("Potato");
-        item4.setAnswerThree("Coconut");
-        item4.setAnswerFour("Sugar cane");
-        item4.setCorrectAnswer(4);
-        item4.setHint("It's sweet");
-        list.add(item4);
-
-        item5.setQuestion("Who is the best character in Game of Thrones?");
-        item5.setAnswerOne("Sersei");
-        item5.setAnswerTwo("Tyrion");
-        item5.setAnswerThree("Khal Drogo");
-        item5.setAnswerFour("Jon Snow");
-        item5.setCorrectAnswer(2);
-        item5.setHint("That's what I do, I drink and I know things");
-        list.add(item5);
+            @Override
+            public void onFinish() {
+                progressDialog.dismiss();
+            }
+        });
     }
 }
