@@ -39,6 +39,7 @@ public class QuestionsActivity extends AppCompatActivity {
     Score playersScore;
     Intent i;
     ProgressDialog progressDialog;
+    ArrayList<Quizie> questions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +55,8 @@ public class QuestionsActivity extends AppCompatActivity {
 
         radioGroup = (RadioGroup) findViewById(R.id.radioGroup);
 
+        questions = new ArrayList<>();
+
         questionNum = 0;
         score = 0;
 
@@ -62,29 +65,32 @@ public class QuestionsActivity extends AppCompatActivity {
         playersScore.setPlayer(i.getStringExtra("name"));
 
         update();
-        questionNum++;
-        radioGroup.clearCheck();
+
+
 
         next = (Button) findViewById(R.id.next);
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (atLeastOneChecked()) {
-                    if (questionNum < 5) {
-                        update();
+                    if (questionNum < 4) {
+                        setEverythingUp();
                         questionNum++;
                         radioGroup.clearCheck();
+                        return;
                     }
-                    if (questionNum == 6) {
+                    if (questionNum == 5) {
                         playersScore.setScore(score);
                         Intent intent = new Intent(QuestionsActivity.this, MainActivity.class);
                         intent.putExtra("score",playersScore);
                         startActivity(intent);
                         finish();
                     }
-                    if (questionNum == 5) {
+                    if (questionNum == 4) {
                         next.setText("Finish");
+                        setEverythingUp();
                         questionNum++;
+                        radioGroup.clearCheck();
                     }
                 } else {
                     Toast.makeText(QuestionsActivity.this, "You need to check at least one", Toast.LENGTH_SHORT).show();
@@ -102,15 +108,30 @@ public class QuestionsActivity extends AppCompatActivity {
 
     }
 
+    public void setEverythingUp()
+    {
+
+        question.setText("Question number " + (questionNum + 1) + ":\n" + questions.get(questionNum).getQuestion());
+
+        answer1.setText(questions.get(questionNum).getAnswerOne());
+        answer2.setText(questions.get(questionNum).getAnswerTwo());
+        answer3.setText(questions.get(questionNum).getAnswerThree());
+        answer4.setText(questions.get(questionNum).getAnswerFour());
+
+        int index = radioGroup.indexOfChild(findViewById(radioGroup.getCheckedRadioButtonId()));
+
+        if((index) == questions.get(questionNum).getCorrectAnswer())
+            score++;
+
+    }
+
     public boolean atLeastOneChecked()
     {
         int index = radioGroup.getCheckedRadioButtonId();
 
         RadioButton selectedAnswer = (RadioButton) findViewById(index);
 
-        if(selectedAnswer == null)
-            return false;
-        return true;
+        return selectedAnswer != null;
     }
 
     public void update()
@@ -132,17 +153,27 @@ public class QuestionsActivity extends AppCompatActivity {
                 try{
                     JSONArray list = response.getJSONArray("data");
 
-                    question.setText("Question number " + (questionNum + 1) + ":\n" + list.getJSONObject(questionNum).getString("question"));
+                    Quizie[] item = new Quizie[10];
 
-                    answer1.setText(list.getJSONObject(questionNum).getString("answer1"));
-                    answer2.setText(list.getJSONObject(questionNum).getString("answer2"));
-                    answer3.setText(list.getJSONObject(questionNum).getString("answer3"));
-                    answer4.setText(list.getJSONObject(questionNum).getString("answer4"));
+                    for(int i = 0; i < list.length(); i++)
+                    {
+                        item[i] = new Quizie();
+                        item[i].setAnswerOne(list.getJSONObject(i).getString("answer1"));
+                        item[i].setAnswerTwo(list.getJSONObject(i).getString("answer2"));
+                        item[i].setAnswerThree(list.getJSONObject(i).getString("answer3"));
+                        item[i].setAnswerFour(list.getJSONObject(i).getString("answer4"));
 
-                    int index = radioGroup.indexOfChild(findViewById(radioGroup.getCheckedRadioButtonId()));
+                        item[i].setQuestion(list.getJSONObject(i).getString("question"));
 
-                    if((index + 1) == list.getJSONObject(questionNum).getInt("correct_answer"))
-                        score++;
+                        item[i].setCorrectAnswer(list.getJSONObject(i).getInt("correct_answer"));
+
+                        questions.add(item[i]);
+                    }
+
+                    setEverythingUp();
+                    questionNum++;
+                    radioGroup.clearCheck();
+
                 }
                 catch (Exception e)
                 {

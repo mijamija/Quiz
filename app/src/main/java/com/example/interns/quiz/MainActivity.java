@@ -1,5 +1,6 @@
 package com.example.interns.quiz;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
@@ -11,17 +12,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
+import cz.msebera.android.httpclient.Header;
+
 public class MainActivity extends AppCompatActivity {
 
     EditText name;
     ArrayList<Score> highScores;
     TextView scores;
+    ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,8 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
         highScores = new ArrayList<>();
 
-        getScore();
-        displayScore();
+        setScores();
 
         Button start = (Button) findViewById(R.id.start);
         start.setOnClickListener(new View.OnClickListener() {
@@ -53,18 +61,46 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void displayScore()
+    public void setScores()
     {
-        for(int i = 0; i < highScores.size(); i++)
+        AsyncHttpClient client = new AsyncHttpClient();
+
+        client.get("http://zoran.ogosense.net/api/get-leaderboard", new JsonHttpResponseHandler()
         {
-            scores.setText(i+1 + ". " + highScores.get(i).getPlayer() + " " + highScores.get(i).getScore() + "\n");
-        }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try{
+                    JSONArray list = response.getJSONArray("data");
+
+                    for(int i = 0; i < 10; i++)
+                    {
+                        scores.setText(scores.getText().toString() + "\n" + (i+1) + ". " + list.getJSONObject(i).getString("name") + " " + list.getJSONObject(i).getInt("score"));
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onStart() {
+                progressDialog= new ProgressDialog(MainActivity.this);
+                progressDialog.setMessage("Loading...");
+                progressDialog.show();
+            }
+
+            @Override
+            public void onFinish() {
+                    progressDialog.dismiss();
+            }
+        });
     }
 
     public void getScore()
     {
-        int temp;
-
         Intent intent = getIntent();
         Score s;
         try {
@@ -73,18 +109,37 @@ public class MainActivity extends AppCompatActivity {
             s = new Score();
         }
 
-        if(highScores.size() == 0 && s.getPlayer() != null)
-            highScores.add(s);
-        else
-        for(Score one : highScores)
+        if(s.getPlayer() != null)
         {
-            if(s.getScore() > one.getScore())
+            AsyncHttpClient client = new AsyncHttpClient();
+
+            client.post("http://zoran.ogosense.net/api/get-leaderboard", new JsonHttpResponseHandler()
             {
-                temp = one.getScore();
-                one.setScore(s.getScore());
-                s.setScore(temp);
-            }
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    try{
+                        
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onStart() {
+                    progressDialog= new ProgressDialog(MainActivity.this);
+                    progressDialog.setMessage("Loading...");
+                    progressDialog.show();
+                }
+
+                @Override
+                public void onFinish() {
+                    progressDialog.dismiss();
+                }
+            });
         }
+
     }
 
 }
