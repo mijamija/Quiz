@@ -15,6 +15,8 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+import com.loopj.android.http.TextHttpResponseHandler;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -73,20 +75,20 @@ public class QuestionsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (atLeastOneChecked()) {
-                    if (questionNum < 4) {
+                    if (questionNum < 9) {
                         setEverythingUp();
                         questionNum++;
                         radioGroup.clearCheck();
                         return;
                     }
-                    if (questionNum == 5) {
-                        playersScore.setScore(score);
+                    if (questionNum == 10) {
+                        playersScore.setScore(10);
+                        sendScores();
                         Intent intent = new Intent(QuestionsActivity.this, MainActivity.class);
-                        intent.putExtra("score",playersScore);
                         startActivity(intent);
                         finish();
                     }
-                    if (questionNum == 4) {
+                    if (questionNum == 9) {
                         next.setText("Finish");
                         setEverythingUp();
                         questionNum++;
@@ -120,7 +122,7 @@ public class QuestionsActivity extends AppCompatActivity {
 
         int index = radioGroup.indexOfChild(findViewById(radioGroup.getCheckedRadioButtonId()));
 
-        if((index) == questions.get(questionNum).getCorrectAnswer())
+        if((index) == questions.get(questionNum + 1).getCorrectAnswer())
             score++;
 
     }
@@ -187,4 +189,31 @@ public class QuestionsActivity extends AppCompatActivity {
             }
         });
     }
+
+    public void sendScores() {
+        AsyncHttpClient client = new AsyncHttpClient();
+
+        RequestParams params = new RequestParams();
+        params.put("name", playersScore.getPlayer());
+        params.put("score", playersScore.getScore());
+
+        try {
+            client.post("http://zoran.ogosense.net/api/set-score", params, new TextHttpResponseHandler() {
+
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, String responseString) {
+//
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+
+                }
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }

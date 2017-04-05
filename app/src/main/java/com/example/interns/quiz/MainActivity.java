@@ -14,13 +14,21 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+import com.loopj.android.http.TextHttpResponseHandler;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 import cz.msebera.android.httpclient.Header;
@@ -28,7 +36,6 @@ import cz.msebera.android.httpclient.Header;
 public class MainActivity extends AppCompatActivity {
 
     EditText name;
-    ArrayList<Score> highScores;
     TextView scores;
     ProgressDialog progressDialog;
 
@@ -41,9 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
         name = (EditText) findViewById(R.id.player);
 
-        highScores = new ArrayList<>();
 
-        setScores();
+        getScores();
 
         Button start = (Button) findViewById(R.id.start);
         start.setOnClickListener(new View.OnClickListener() {
@@ -55,13 +61,12 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(MainActivity.this, QuestionsActivity.class);
                     intent.putExtra("name",name.getText().toString());
                     startActivity(intent);
-                    finish();
                 }
             }
         });
     }
 
-    public void setScores()
+    public void getScores()
     {
         AsyncHttpClient client = new AsyncHttpClient();
 
@@ -99,47 +104,5 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void getScore()
-    {
-        Intent intent = getIntent();
-        Score s;
-        try {
-             s = (Score) intent.getExtras().getSerializable("score");
-        } catch (Exception e) {
-            s = new Score();
-        }
-
-        if(s.getPlayer() != null)
-        {
-            AsyncHttpClient client = new AsyncHttpClient();
-
-            client.post("http://zoran.ogosense.net/api/get-leaderboard", new JsonHttpResponseHandler()
-            {
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                    try{
-                        
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onStart() {
-                    progressDialog= new ProgressDialog(MainActivity.this);
-                    progressDialog.setMessage("Loading...");
-                    progressDialog.show();
-                }
-
-                @Override
-                public void onFinish() {
-                    progressDialog.dismiss();
-                }
-            });
-        }
-
-    }
 
 }
